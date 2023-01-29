@@ -1,7 +1,5 @@
-const getOrigin = (req) => {
-  const host = req.get("x-forwarded-host");
-  const protocol = req.get("x-forwarded-proto");
-  return `${protocol}://${host}`;
+const getOrigin = () => {
+  return process.env.FRONT_END_ORIGIN;
 };
 
 const getUserAgent = (req) => {

@@ -37,7 +37,7 @@ const register = async (req, res) => {
     name: user.firstName,
     email: user.email,
     verificationToken,
-    origin: customUtils.getOrigin(req),
+    origin: customUtils.getOrigin(),
   });
 
   res
@@ -170,7 +170,7 @@ const forgotPassword = async (req, res) => {
     name: user.firstName,
     email: user.email,
     passwordToken,
-    origin: customUtils.getOrigin(req),
+    origin: customUtils.getOrigin(),
   });
 
   const tenMinutes = 1000 * 60 * 10;
