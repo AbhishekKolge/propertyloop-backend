@@ -41,12 +41,12 @@ const app = express();
 //security middleware
 //helps with ips behind proxies
 app.set("trust proxy", 1);
-// app.use(
-//   rateLimiter({
-//     windowMs: 15 * 60 * 1000,
-//     max: 60,
-//   })
-// );
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+  })
+);
 app.use(cors());
 app.use(helmet());
 app.use(xss());
@@ -58,7 +58,8 @@ app.use(
 
 app.use(express.json());
 //logging
-app.use(morgan("tiny"));
+// app.use(morgan("tiny"));
+
 app.use(
   fileUpload({
     useTempFiles: true,
