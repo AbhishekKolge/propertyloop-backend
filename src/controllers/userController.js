@@ -168,9 +168,6 @@ const deleteUser = async (req, res) => {
 
   await user.remove();
 
-  await cloudinary.uploader.destroy(user.profileImageId);
-  await cloudinary.uploader.destroy(user.resumeId);
-
   res.status(StatusCodes.OK).json({});
 };
 
