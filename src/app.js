@@ -47,7 +47,12 @@ app.use(
     max: 60,
   })
 );
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin: process.env.FRONT_END_ORIGIN,
+    optionsSuccessStatus: 200,
+  })
+);
 app.use(helmet());
 app.use(xss());
 app.use(
