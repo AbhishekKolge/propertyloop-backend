@@ -1,17 +1,14 @@
-
 # Joblink Node JS Server
 
 It is a backend server for joblink web application. It is an app where user can register as employee or employers and post or apply for a job. It is just my personal side project which I created for fun and to demo a simple CURD application. I have used MongoDB atlas for my database and Node JS to write REST API's.
 
-
 ## Demo
-link: https://joblink-frontend.vercel.app
 
+link: https://joblink-frontend.vercel.app
 
 ## API Reference
 
-https://jolink-backend-production.up.railway.app/doc.html
-
+https://joblink-backend.onrender.com/doc.html
 
 ## Environment Variables
 
@@ -46,6 +43,7 @@ To run this project, you will need to add the following environment variables to
 `TEST_EMPLOYER_ID`
 
 `FRONT_END_ORIGIN`
+
 ## Run Locally
 
 Clone the project
@@ -71,4 +69,3 @@ Start the server
 ```bash
   npm run dev
 ```
-
