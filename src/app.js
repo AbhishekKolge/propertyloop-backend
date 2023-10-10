@@ -1,18 +1,19 @@
 //environment variables
-require("dotenv").config();
+require('dotenv').config();
 //catch all async errors
-require("express-async-errors");
+require('express-async-errors');
 
 //third party packages
-const express = require("express");
-const morgan = require("morgan");
-const cors = require("cors");
-const helmet = require("helmet");
-const xss = require("xss-clean");
-const rateLimiter = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
-const fileUpload = require("express-fileupload");
-const cloudinary = require("cloudinary").v2;
+const express = require('express');
+const morgan = require('morgan');
+const cors = require('cors');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const rateLimiter = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const fileUpload = require('express-fileupload');
+const logProLogger = require('@abhishek_kolge/logpro-logger');
+const cloudinary = require('cloudinary').v2;
 
 //upload file configuration
 cloudinary.config({
@@ -22,25 +23,25 @@ cloudinary.config({
 });
 
 //database connection function
-const connectDB = require("./db/connect");
+const connectDB = require('./db/connect');
 
 //custom middleware
-const notFoundMiddleware = require("./middleware/not-found");
-const errorHandlerMiddleware = require("./middleware/error-handler");
+const notFoundMiddleware = require('./middleware/not-found');
+const errorHandlerMiddleware = require('./middleware/error-handler');
 
 //routers
-const authRouter = require("./routes/authRoutes");
-const userRouter = require("./routes/userRoutes");
-const jobCategoryRouter = require("./routes/jobCategoryRoutes");
-const jobRouter = require("./routes/jobRoutes");
-const applicationRouter = require("./routes/applicationRoutes");
+const authRouter = require('./routes/authRoutes');
+const userRouter = require('./routes/userRoutes');
+const jobCategoryRouter = require('./routes/jobCategoryRoutes');
+const jobRouter = require('./routes/jobRoutes');
+const applicationRouter = require('./routes/applicationRoutes');
 
 //initialize express app
 const app = express();
 
 //security middleware
 //helps with ips behind proxies
-app.set("trust proxy", 1);
+app.set('trust proxy', 1);
 app.use(
   rateLimiter({
     windowMs: 15 * 60 * 1000,
@@ -62,22 +63,27 @@ app.use(
 );
 
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static('public'));
 //logging
-app.use(morgan("tiny"));
+app.use(morgan('tiny'));
 
 app.use(
   fileUpload({
     useTempFiles: true,
   })
 );
+app.use(
+  logProLogger({
+    key: process.env.LOGPRO_API_KEY,
+  })
+);
 
 //routes
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/users", userRouter);
-app.use("/api/v1/job-categories", jobCategoryRouter);
-app.use("/api/v1/jobs", jobRouter);
-app.use("/api/v1/application", applicationRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/job-categories', jobCategoryRouter);
+app.use('/api/v1/jobs', jobRouter);
+app.use('/api/v1/application', applicationRouter);
 
 //custom middleware
 app.use(notFoundMiddleware);
