@@ -13,7 +13,7 @@
     "nodemon": "^2.0.20"
   },
   "dependencies": {
-    "@abhishek_kolge/logpro-logger": "^1.0.5",
+    "@abhishek_kolge/logpro-logger": "^1.0.6",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.33.0",
     "cors": "^2.8.5",
