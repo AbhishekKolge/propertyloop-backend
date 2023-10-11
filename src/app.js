@@ -75,6 +75,7 @@ app.use(
 app.use(
   logProLogger({
     key: process.env.LOGPRO_API_KEY,
+    type: 'production',
   })
 );
 
