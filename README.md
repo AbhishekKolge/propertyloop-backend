@@ -8,7 +8,7 @@ link: https://joblink-frontend.vercel.app
 
 ## API Reference
 
-https://joblink-backend.onrender.com/doc.html
+https://jolink-backend-production.up.railway.app/doc.html
 
 ## Environment Variables
 
