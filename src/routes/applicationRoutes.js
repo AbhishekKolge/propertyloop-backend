@@ -1,47 +1,39 @@
-const express = require("express");
+const express = require('express');
 
 const {
   createApplication,
   getUserApplications,
   getJobApplications,
   updateApplication,
-} = require("../controllers/applicationController");
+} = require('../controllers/applicationController');
 
 const {
   authenticateUserMiddleware,
   authorizePermissionsMiddleware,
-} = require("../middleware/authentication");
-const { testUserMiddleware } = require("../middleware/test-user");
+} = require('../middleware/authentication');
+const { testUserMiddleware } = require('../middleware/test-user');
 
 const router = express.Router();
 
 router
-  .route("/")
+  .route('/')
   .post(
-    [
-      authenticateUserMiddleware,
-      authorizePermissionsMiddleware("user"),
-      testUserMiddleware,
-    ],
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('user')],
     createApplication
   )
   .get(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware("user")],
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('user')],
     getUserApplications
   );
 
 router
-  .route("/:id")
+  .route('/:id')
   .get(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware("employer")],
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('employer')],
     getJobApplications
   )
   .patch(
-    [
-      authenticateUserMiddleware,
-      authorizePermissionsMiddleware("employer"),
-      testUserMiddleware,
-    ],
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('employer')],
     updateApplication
   );
 
