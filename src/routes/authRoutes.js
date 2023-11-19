@@ -1,23 +1,37 @@
-const express = require("express");
+const express = require('express');
 
 const {
   register,
-  login,
-  logout,
-  verifyEmail,
+  verify,
   forgotPassword,
   resetPassword,
-} = require("../controllers/authController");
-
-const { authenticateUserMiddleware } = require("../middleware/authentication");
+  login,
+  logout,
+} = require('../controllers/authController');
+const {
+  registerSchema,
+  verifySchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  loginSchema,
+  logoutSchema,
+} = require('../validation/auth');
+const { authenticateUserMiddleware } = require('../middleware/authentication');
+const { validateRequest } = require('../middleware/validate-request');
 
 const router = express.Router();
 
-router.route("/register").post(register);
-router.route("/login").post(login);
-router.route("/logout").delete(authenticateUserMiddleware, logout);
-router.route("/verify-email").post(verifyEmail);
-router.route("/forgot-password").post(forgotPassword);
-router.route("/reset-password").post(resetPassword);
+router.route('/register').post([registerSchema, validateRequest], register);
+router.route('/verify').post([verifySchema, validateRequest], verify);
+router
+  .route('/forgot-password')
+  .post([forgotPasswordSchema, validateRequest], forgotPassword);
+router
+  .route('/reset-password')
+  .post([resetPasswordSchema, validateRequest], resetPassword);
+router.route('/login').post([loginSchema, validateRequest], login);
+router
+  .route('/logout')
+  .delete([authenticateUserMiddleware, logoutSchema, validateRequest], logout);
 
 module.exports = router;

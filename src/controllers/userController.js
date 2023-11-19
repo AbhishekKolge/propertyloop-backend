@@ -1,48 +1,49 @@
-const { StatusCodes } = require("http-status-codes");
-const cloudinary = require("cloudinary").v2;
-const fs = require("fs").promises;
+const { StatusCodes } = require('http-status-codes');
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs').promises;
 
-const User = require("../models/User");
-const JobCategory = require("../models/JobCategory");
-const CustomError = require("../errors");
-const customUtils = require("../utils");
+const User = require('../models/User');
+const CustomError = require('../errors');
+const customUtils = require('../utils');
 
 const showCurrentUser = async (req, res) => {
   const user = await User.findOne({ _id: req.user.userId }).select(
-    "-password -authenticationPlatform -verificationToken -isVerified -verified -passwordToken -passwordTokenExpirationDate"
+    '-password -authenticationPlatform -verificationCode -passwordCode -passwordCodeExpirationDate'
   );
-  const jobCategories = await JobCategory.find({});
-  res.status(StatusCodes.OK).json({ user, jobCategories });
+
+  res.status(StatusCodes.OK).json({ user });
 };
 
 const uploadProfileImage = async (req, res) => {
-  if (!req.files || !req.files.image) {
-    throw new CustomError.BadRequestError("No file uploaded");
+  const { userId } = req.user;
+
+  if (!req.files || !req.files.profileImage) {
+    throw new CustomError.BadRequestError('No file attached');
   }
 
-  const profileImage = req.files.image;
+  const { profileImage } = req.files;
 
-  if (!profileImage.mimetype.startsWith("image")) {
-    throw new CustomError.BadRequestError("Please upload an image");
+  if (!profileImage.mimetype.startsWith('image')) {
+    throw new CustomError.BadRequestError('Please upload an image');
   }
 
   const maxSize = 1024 * 1024;
 
   if (profileImage.size >= maxSize) {
     throw new CustomError.BadRequestError(
-      "Please upload an image smaller than 1 MB"
+      'Please upload an image smaller than 1 MB'
     );
   }
 
   const result = await cloudinary.uploader.upload(profileImage.tempFilePath, {
     use_filename: true,
-    folder: "joblink/profile-images",
+    folder: 'propertyloop/profile-images',
   });
 
   await fs.unlink(profileImage.tempFilePath);
 
   const user = await User.findOneAndUpdate(
-    { _id: req.user.userId },
+    { _id: userId },
     { profileImage: result.secure_url, profileImageId: result.public_id },
     { runValidators: true }
   );
@@ -52,130 +53,78 @@ const uploadProfileImage = async (req, res) => {
   }
 
   res.status(StatusCodes.OK).json({
-    profileImage: { src: result.secure_url },
-  });
-};
-
-const uploadResume = async (req, res) => {
-  if (!req.files || !req.files.resume) {
-    throw new CustomError.BadRequestError("No file uploaded");
-  }
-
-  const userResume = req.files.resume;
-
-  if (!userResume.mimetype.startsWith("application/pdf")) {
-    throw new CustomError.BadRequestError("Please upload a pdf");
-  }
-
-  const maxSize = 1024 * 1024;
-
-  if (userResume.size > maxSize) {
-    throw new CustomError.BadRequestError(
-      "Please upload a file smaller than 1 MB"
-    );
-  }
-
-  const result = await cloudinary.uploader.upload(userResume.tempFilePath, {
-    use_filename: true,
-    folder: "joblink/resume",
-  });
-
-  await fs.unlink(userResume.tempFilePath);
-
-  const user = await User.findOneAndUpdate(
-    { _id: req.user.userId },
-    { resume: result.secure_url, resumeId: result.public_id },
-    { runValidators: true }
-  );
-
-  if (user.resumeId) {
-    await cloudinary.uploader.destroy(user.resumeId);
-  }
-
-  res.status(StatusCodes.OK).json({
-    resume: { src: result.secure_url },
+    profileImage: result.secure_url,
   });
 };
 
 const updateUser = async (req, res) => {
-  const { firstName, companyName } = req.body;
-  const { userId, role } = req.user;
-
-  if (!firstName) {
-    throw new CustomError.BadRequestError("Please provide first name");
-  }
-
-  if (role === "employer" && !companyName) {
-    throw new CustomError.BadRequestError("Please provide company name");
-  }
-
-  if (role !== "employer") {
-    delete req.body.companyName;
-  }
-
-  delete req.body.email;
+  const { userId } = req.user;
 
   await User.findOneAndUpdate({ _id: userId }, req.body, {
     new: true,
     runValidators: true,
   });
 
-  res.status(StatusCodes.OK).json({});
+  res.status(StatusCodes.OK).json({
+    msg: 'Profile updated successfully',
+  });
 };
 
-const removeFile = async (req, res) => {
-  const { isResume, fileId } = req.query;
+const removeProfileImage = async (req, res) => {
+  const { profileImageId } = req.query;
+  const { userId } = req.user;
 
-  if (!fileId) {
-    throw new CustomError.BadRequestError("Please provide file id");
+  if (!profileImageId) {
+    throw new CustomError.BadRequestError('Please provide profile image id');
   }
 
-  let fileType = "profileImageId";
-  let fileProperty = "profileImage";
-
-  if (isResume == 1) {
-    fileType = "resumeId";
-    fileProperty = "resume";
-  }
-
-  const user = await User.findOne({ [fileType]: fileId });
+  const user = await User.findOne({ profileImageId, _id: userId });
 
   if (!user) {
-    throw new CustomError.NotFoundError(`No file found with id of ${fileId}`);
+    throw new CustomError.NotFoundError(
+      `No profile image found with id of ${fileId}`
+    );
   }
 
-  customUtils.checkPermissions(req.user, user._id);
-
-  user[fileType] = "";
-  user[fileProperty] = "";
+  user.profileImage = '';
+  user.profileImageId = '';
   await user.save();
 
-  await cloudinary.uploader.destroy(fileId);
+  await cloudinary.uploader.destroy(profileImageId);
 
-  res.status(StatusCodes.OK).json({});
+  res.status(StatusCodes.OK).json({
+    msg: 'Profile image removed successfully',
+  });
 };
 
 const deleteUser = async (req, res) => {
   const { userId } = req.user;
 
-  const user = await User.findOne({ _id: userId });
+  const { deletedCount } = await User.deleteOne({
+    _id: userId,
+  });
 
-  if (!user) {
+  if (!deletedCount) {
     throw new CustomError.NotFoundError(`No user found with id of ${userId}`);
   }
 
-  customUtils.checkPermissions(req.user, user._id);
+  res.cookie('token', 'logout', {
+    httpOnly: true,
+    maxAge: 0,
+    secure: true,
+    signed: true,
+    sameSite: 'none',
+  });
 
-  await user.remove();
-
-  res.status(StatusCodes.OK).json({});
+  res.status(StatusCodes.OK).json({
+    msg: 'Account deleted successfully',
+  });
 };
 
 module.exports = {
   showCurrentUser,
   uploadProfileImage,
-  uploadResume,
-  updateUser,
-  removeFile,
+  removeProfileImage,
   deleteUser,
+  updateUser,
 };

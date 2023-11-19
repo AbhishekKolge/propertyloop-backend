@@ -1,161 +1,111 @@
-const { StatusCodes } = require("http-status-codes");
+const { StatusCodes } = require('http-status-codes');
 
-const Job = require("../models/Job");
-const Application = require("../models/Application");
-const CustomError = require("../errors");
+const Property = require('../models/Property');
+const Application = require('../models/Application');
+const CustomError = require('../errors');
+const customUtils = require('../utils');
 
 const createApplication = async (req, res) => {
   const {
     user: { userId },
-    body: { id: jobId },
+    body: { id: propertyId },
   } = req;
 
-  const job = await Job.findOne({ _id: jobId });
+  const property = await Property.findOne({ _id: propertyId }).populate({
+    path: 'applications',
+    select: 'tenant -property -_id',
+  });
 
-  if (!job) {
-    throw new CustomError.NotFoundError(`No job found with id of ${jobId}`);
+  if (!property) {
+    throw new CustomError.NotFoundError(
+      `No property found with id of ${propertyId}`
+    );
   }
 
-  const alreadySubmitted = await Application.findOne({
-    job: jobId,
-    user: userId,
+  const alreadySubmitted = property.applications.find((application) => {
+    return application.tenant.equals(userId);
   });
 
   if (alreadySubmitted) {
-    throw new CustomError.ConflictError("Already applied for this job");
+    throw new CustomError.ConflictError('Already applied for this property');
   }
 
   await Application.create({
-    user: userId,
-    job: jobId,
+    tenant: userId,
+    property: propertyId,
   });
 
-  res.status(StatusCodes.CREATED).json({});
+  res
+    .status(StatusCodes.CREATED)
+    .json({ msg: 'Application created successfully' });
 };
 
 const getUserApplications = async (req, res) => {
   const { userId } = req.user;
-  const { status, sort } = req.query;
+  const { sort, pageNumber, pageSize } = req.query;
 
-  let queryObject = {
-    user: userId,
-  };
+  const queryBuilder = new customUtils.QueryBuilder({
+    model: Application,
+  });
 
-  if (status) {
-    queryObject.status = status;
-  }
-
-  let result = Application.find(queryObject).populate({
-    path: "job",
-    populate: [
-      {
-        path: "employer",
-        select: "companyName profileImage gender",
+  const { results, totalCount, totalPages } = await queryBuilder
+    .filter({ tenant: userId })
+    .sort(sort)
+    .paginate(pageNumber || 1, pageSize || 12)
+    .populate('property', {
+      populate: {
+        path: 'landlord',
+        select: { name: 1, email: 1, profileImage: 1 },
       },
-      { path: "jobCategory", select: "name" },
-    ],
-  });
+    })
+    .execute();
 
-  if (sort === "latest") {
-    result = result.sort("-createdAt");
-  }
-  if (sort === "oldest") {
-    result = result.sort("createdAt");
-  }
-  if (!sort) {
-    result = result.sort("-createdAt");
-  }
-
-  const page = +req.query.page || 1;
-  const limit = 8;
-  const skip = (page - 1) * limit;
-
-  result = result.skip(skip).limit(limit);
-
-  const applications = await result;
-
-  const totalApplications = await Application.countDocuments(queryObject);
-  const numOfPages = Math.ceil(totalApplications / limit);
-
-  res
-    .status(StatusCodes.OK)
-    .json({ applications, totalApplications, numOfPages });
+  res.status(StatusCodes.OK).json({ results, totalCount, totalPages });
 };
 
-const getJobApplications = async (req, res) => {
-  const { id: jobId } = req.params;
-  const { status, sort } = req.query;
+const getPropertyApplications = async (req, res) => {
+  const { id: propertyId } = req.params;
+  const { sort, pageNumber, pageSize } = req.query;
 
-  let queryObject = {
-    job: jobId,
-  };
-
-  if (status) {
-    queryObject.status = status;
-  }
-
-  let result = Application.find(queryObject).populate({
-    path: "user",
-    select:
-      "-password -authenticationPlatform -verificationToken -isVerified -verified -passwordToken -passwordTokenExpirationDate",
-    populate: { path: "jobCategories", select: "name" },
+  const queryBuilder = new customUtils.QueryBuilder({
+    model: Application,
   });
 
-  if (sort === "latest") {
-    result = result.sort("-createdAt");
-  }
-  if (sort === "oldest") {
-    result = result.sort("createdAt");
-  }
-  if (!sort) {
-    result = result.sort("-createdAt");
-  }
+  const { results, totalCount, totalPages } = await queryBuilder
+    .filter({ property: propertyId })
+    .sort(sort)
+    .paginate(pageNumber || 1, pageSize || 12)
+    .populate('tenant', { name: 1, email: 1, profileImage: 1 })
+    .execute();
 
-  const page = +req.query.page || 1;
-  const limit = 8;
-  const skip = (page - 1) * limit;
-
-  result = result.skip(skip).limit(limit);
-
-  const applications = await result;
-
-  const totalApplications = await Application.countDocuments(queryObject);
-  const numOfPages = Math.ceil(totalApplications / limit);
-
-  res
-    .status(StatusCodes.OK)
-    .json({ applications, totalApplications, numOfPages });
+  res.status(StatusCodes.OK).json({ results, totalCount, totalPages });
 };
 
-const updateApplication = async (req, res) => {
+const cancelApplication = async (req, res) => {
   const {
     params: { id: applicationId },
-    body: { status },
+    user: { userId },
   } = req;
 
-  if (!status) {
-    throw new CustomError.BadRequestError("Please provide status");
-  }
+  const { deletedCount } = await Application.deleteOne({
+    _id: applicationId,
+    tenant: userId,
+  });
 
-  const application = await Application.findOne({ _id: applicationId });
-
-  if (!application) {
+  if (!deletedCount) {
     throw new CustomError.NotFoundError(
       `No application found with id of ${applicationId}`
     );
   }
 
-  await application.checkPermission(req.user);
-
-  application.status = status;
-  await application.save();
-
-  res.status(StatusCodes.OK).json({});
+  res
+    .status(StatusCodes.OK)
+    .json({ msg: 'Application cancelled successfully' });
 };
 
 module.exports = {
   createApplication,
   getUserApplications,
-  getJobApplications,
-  updateApplication,
+  getPropertyApplications,
+  cancelApplication,
 };

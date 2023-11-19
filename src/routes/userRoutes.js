@@ -1,32 +1,49 @@
-const express = require("express");
+const express = require('express');
 
 const {
   showCurrentUser,
   uploadProfileImage,
-  uploadResume,
-  updateUser,
-  removeFile,
+  removeProfileImage,
   deleteUser,
-} = require("../controllers/userController");
-
-const { authenticateUserMiddleware } = require("../middleware/authentication");
-const { testUserMiddleware } = require("../middleware/test-user");
+  updateUser,
+} = require('../controllers/userController');
+const {
+  updateUserSchema,
+  uploadProfileImageSchema,
+  removeProfileImageSchema,
+  deleteUserSchema,
+} = require('../validation/user');
+const { authenticateUserMiddleware } = require('../middleware/authentication');
+const { testUserMiddleware } = require('../middleware/test-user');
+const { validateRequest } = require('../middleware/validate-request');
 
 const router = express.Router();
 
 router
-  .route("/")
-  .patch([authenticateUserMiddleware, testUserMiddleware], updateUser)
-  .delete([authenticateUserMiddleware, testUserMiddleware], deleteUser);
-router.route("/show-me").get(authenticateUserMiddleware, showCurrentUser);
+  .route('/')
+  .patch(
+    [authenticateUserMiddleware, updateUserSchema, validateRequest],
+    updateUser
+  )
+  .delete(
+    [
+      authenticateUserMiddleware,
+      deleteUserSchema,
+      validateRequest,
+      testUserMiddleware,
+    ],
+    deleteUser
+  );
+router.route('/show-me').get(authenticateUserMiddleware, showCurrentUser);
 router
-  .route("/profile-image")
-  .post([authenticateUserMiddleware, testUserMiddleware], uploadProfileImage);
-router
-  .route("/resume")
-  .post([authenticateUserMiddleware, testUserMiddleware], uploadResume);
-router
-  .route("/file")
-  .delete([authenticateUserMiddleware, testUserMiddleware], removeFile);
+  .route('/profile-image')
+  .post(
+    [authenticateUserMiddleware, uploadProfileImageSchema, validateRequest],
+    uploadProfileImage
+  )
+  .delete(
+    [authenticateUserMiddleware, removeProfileImageSchema, validateRequest],
+    removeProfileImage
+  );
 
 module.exports = router;

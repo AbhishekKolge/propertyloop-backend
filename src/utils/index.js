@@ -1,32 +1,41 @@
-const { createJWT, isTokenValid, getJWTToken } = require("./jwt");
-const { createTokenUser } = require("./createTokenUser");
-const { checkPermissions } = require("./checkPermissions");
-const { nodeMailerConfig } = require("./emailConfig");
-const { sendEmail } = require("./sendEmail");
-const { sendVerificationEmail } = require("./sendVerificationEmail");
-const { sendResetPasswordEmail } = require("./sendResetPasswordEmail");
-const { hashString, createRandomBytes } = require("./createHash");
 const {
-  getOrigin,
-  getUserAgent,
-  getRequestIp,
-  checkTestUser,
-} = require("./requestInfo");
-
-module.exports = {
-  createJWT,
-  isTokenValid,
-  getJWTToken,
-  createTokenUser,
-  checkPermissions,
-  nodeMailerConfig,
-  sendEmail,
-  sendVerificationEmail,
-  sendResetPasswordEmail,
   hashString,
   createRandomBytes,
-  getOrigin,
+  createRandomOtp,
+} = require('./createHash');
+const { createTokenUser } = require('./createTokenUser');
+const { nodeMailerConfig } = require('./emailConfig');
+const { createJWT, isTokenValid, attachCookiesToResponse } = require('./jwt');
+const { checkPermissions } = require('./permissions');
+const { getUserAgent, getRequestIp, checkTestUser } = require('./requestInfo');
+const { sendEmail } = require('./email');
+const {
+  sendResetPasswordEmail,
+  sendVerificationEmail,
+} = require('./sendEmail');
+const { currentTime, checkTimeExpired, time } = require('./time');
+const { removeQuotes } = require('./format');
+const { QueryBuilder } = require('./queryBuilder');
+
+module.exports = {
+  hashString,
+  createRandomBytes,
+  createRandomOtp,
+  createTokenUser,
+  nodeMailerConfig,
+  createJWT,
+  isTokenValid,
+  attachCookiesToResponse,
+  checkPermissions,
   getUserAgent,
   getRequestIp,
   checkTestUser,
+  sendEmail,
+  sendResetPasswordEmail,
+  sendVerificationEmail,
+  currentTime,
+  checkTimeExpired,
+  time,
+  removeQuotes,
+  QueryBuilder,
 };

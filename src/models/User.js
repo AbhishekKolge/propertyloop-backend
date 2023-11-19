@@ -1,44 +1,41 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const bcrypt = require("bcryptjs");
-const cloudinary = require("cloudinary").v2;
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const validator = require('validator');
+const cloudinary = require('cloudinary').v2;
 
-const CustomError = require("../errors");
+const CustomError = require('../errors');
+const customUtils = require('../utils');
+const Application = require('./Application');
+const Property = require('./Property');
 
 const UserSchema = new mongoose.Schema(
   {
-    firstName: {
+    name: {
       type: String,
       trim: true,
-      required: [true, "Please provide first name"],
-      minLength: [3, "First name should be minimum 3 characters"],
-      maxLength: [20, "First name should not be more than 20 characters"],
+      required: [true, 'Please provide name'],
     },
-    lastName: {
+    email: {
       type: String,
       trim: true,
-      maxLength: [20, "Last name should not be more than 20 characters"],
+      required: [true, 'Please provide email'],
     },
-    designation: {
+    password: {
       type: String,
       trim: true,
-      maxLength: [40, "Designation should not be more than 40 characters"],
+      required: [true, 'Please provide password'],
     },
-    contactNo: {
+    role: {
       type: String,
       trim: true,
-      validate: {
-        validator: validator.isMobilePhone,
-        message: "Please provide valid contact no",
+      enum: {
+        values: ['tenant', 'landlord'],
+        message: '{VALUE} is not supported',
       },
+      default: 'tenant',
     },
     dob: {
       type: Date,
-    },
-    city: {
-      type: String,
-      trim: true,
-      maxLength: [20, "City should not be more than 20 characters"],
     },
     profileImage: {
       type: String,
@@ -46,64 +43,15 @@ const UserSchema = new mongoose.Schema(
     profileImageId: {
       type: String,
     },
-    status: {
-      type: String,
-      enum: {
-        values: ["active", "inactive"],
-        message: "{VALUE} is not supported",
-      },
-      default: "active",
-    },
-    companyName: {
-      type: String,
-      maxLength: [40, "City should not be more than 40 characters"],
-    },
-    email: {
-      type: String,
-      trim: true,
-      validate: {
-        validator: validator.isEmail,
-        message: "Please provide valid email",
-      },
-      required: [true, "Please provide email"],
-    },
-    password: {
-      type: String,
-      trim: true,
-      required: [true, "Please provide password"],
-      minLength: [8, "Password should be at least 8 characters"],
-    },
-    gender: {
-      type: String,
-      enum: {
-        values: ["male", "female"],
-        message: "{VALUE} is not supported",
-      },
-      default: "male",
-    },
-    role: {
-      type: String,
-      enum: {
-        values: ["employer", "user", "admin"],
-        message: "{VALUE} is not supported",
-      },
-      default: "user",
-    },
-    resume: {
-      type: String,
-    },
-    resumeId: {
-      type: String,
-    },
     authenticationPlatform: {
       type: String,
       enum: {
-        values: ["app", "google"],
-        message: "{VALUE} is not supported",
+        values: ['app', 'google'],
+        message: '{VALUE} is not supported',
       },
-      default: "app",
+      default: 'app',
     },
-    verificationToken: {
+    verificationCode: {
       type: String,
     },
     isVerified: {
@@ -113,55 +61,52 @@ const UserSchema = new mongoose.Schema(
     verified: {
       type: Date,
     },
-    passwordToken: {
+    passwordCode: {
       type: String,
     },
-    passwordTokenExpirationDate: {
+    passwordCodeExpirationDate: {
       type: Date,
     },
-    jobCategories: [
-      {
-        type: mongoose.Types.ObjectId,
-        ref: "JobCategory",
-      },
-    ],
   },
   {
     timestamps: true,
   }
 );
 
-UserSchema.index({ contactNo: 1, email: 1 }, { unique: true });
+UserSchema.index({ email: 1 }, { unique: true });
 
-UserSchema.pre("validate", async function () {
-  const isModified = this.isModified("password");
+UserSchema.pre('validate', async function () {
+  const isModified = this.isModified('password');
   if (!isModified) return;
-  if (
-    !validator.isStrongPassword(this.password, {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 1,
-    })
-  )
-    throw new CustomError.BadRequestError("Please provide strong password");
+  const isPasswordStrong = validator.isStrongPassword(this.password, {
+    minLength: 8,
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+  });
+  if (!isPasswordStrong)
+    throw new CustomError.BadRequestError('Please provide strong password');
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-UserSchema.pre("remove", async function () {
-  await this.model("Token").findOneAndDelete({ user: this._id });
-  await this.model("Application").deleteMany({ user: this._id });
-  const jobs = await this.model("Job").find({ employer: this._id });
-  for (let i = 0; i < jobs.length; i++) {
-    await jobs[i].remove();
+UserSchema.pre('deleteOne', async function () {
+  const docToDelete = await this.model.findOne(this.getQuery());
+  if (!docToDelete) {
+    return;
   }
-  if (this.profileImageId) {
-    await cloudinary.uploader.destroy(this.profileImageId);
+  await Application.deleteMany({ tenant: docToDelete._id });
+  const properties = await Property.find({
+    landlord: docToDelete._id,
+  });
+  for (const property of properties) {
+    await Property.deleteOne({
+      _id: property._id,
+    });
   }
-  if (this.resumeId) {
-    await cloudinary.uploader.destroy(this.resumeId);
+  if (docToDelete.profileImageId) {
+    await cloudinary.uploader.destroy(docToDelete.profileImageId);
   }
 });
 
@@ -169,36 +114,55 @@ UserSchema.methods.comparePassword = async function (password) {
   const isMatch = await bcrypt.compare(password, this.password);
   if (!isMatch)
     throw new CustomError.UnauthenticatedError(
-      "Please provide valid credentials"
+      'Please provide valid credentials'
     );
 };
 
-UserSchema.methods.compareVerificationToken = function (token) {
-  const isMatch = this.verificationToken === token;
+UserSchema.methods.compareVerificationCode = function (code) {
+  const isMatch = this.verificationCode === customUtils.hashString(code);
   if (!isMatch)
-    throw new CustomError.UnauthenticatedError("Verification failed");
+    throw new CustomError.UnauthenticatedError('Verification failed');
+  this.isVerified = true;
+  this.verified = Date.now();
+  this.verificationCode = '';
 };
 
-UserSchema.methods.checkPasswordTokenValidity = function () {
-  const isValid =
-    new Date(this.passwordTokenExpirationDate).getTime() > Date.now();
+UserSchema.methods.checkPasswordCodeValidity = function () {
+  const isExpired = customUtils.checkTimeExpired(
+    this.passwordCodeExpirationDate
+  );
 
-  if (isValid && this.passwordToken)
-    throw new CustomError.ConflictError("Password reset link already sent");
+  if (!isExpired && this.passwordCode)
+    throw new CustomError.ConflictError('Password reset code already sent');
 };
 
-UserSchema.methods.verifyPasswordToken = function (passwordToken) {
-  const isValid =
-    new Date(this.passwordTokenExpirationDate).getTime() > Date.now();
-
-  if (!isValid)
+UserSchema.methods.verifyPasswordCode = function (code, password) {
+  if (!this.passwordCodeExpirationDate || !this.passwordCode) {
     throw new CustomError.UnauthenticatedError(
-      "Password reset link has expired"
+      'Please generate forgot password code'
+    );
+  }
+  const isExpired = customUtils.checkTimeExpired(
+    this.passwordCodeExpirationDate
+  );
+
+  if (isExpired)
+    throw new CustomError.UnauthenticatedError(
+      'Password reset code has expired'
     );
 
-  const isMatch = this.passwordToken === passwordToken;
+  const isMatch = this.passwordCode === customUtils.hashString(code);
   if (!isMatch)
-    throw new CustomError.UnauthenticatedError("Verification failed");
+    throw new CustomError.UnauthenticatedError('Verification failed');
+  this.password = password;
+  this.passwordCode = null;
+  this.passwordCodeExpirationDate = null;
 };
 
-module.exports = mongoose.model("User", UserSchema);
+UserSchema.methods.checkAuthorized = function () {
+  if (!this.isVerified) {
+    throw new CustomError.UnauthorizedError('Please verify your email');
+  }
+};
+
+module.exports = mongoose.model('User', UserSchema);

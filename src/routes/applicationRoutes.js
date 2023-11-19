@@ -3,38 +3,52 @@ const express = require('express');
 const {
   createApplication,
   getUserApplications,
-  getJobApplications,
-  updateApplication,
+  getPropertyApplications,
+  cancelApplication,
 } = require('../controllers/applicationController');
-
 const {
   authenticateUserMiddleware,
   authorizePermissionsMiddleware,
 } = require('../middleware/authentication');
+const {
+  createApplicationSchema,
+  cancelApplicationSchema,
+} = require('../validation/application');
 const { testUserMiddleware } = require('../middleware/test-user');
+const { validateRequest } = require('../middleware/validate-request');
 
 const router = express.Router();
 
 router
   .route('/')
   .post(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware('user')],
+    [
+      authenticateUserMiddleware,
+      authorizePermissionsMiddleware('tenant'),
+      createApplicationSchema,
+      validateRequest,
+    ],
     createApplication
   )
   .get(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware('user')],
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('tenant')],
     getUserApplications
   );
 
 router
   .route('/:id')
   .get(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware('employer')],
-    getJobApplications
+    [authenticateUserMiddleware, authorizePermissionsMiddleware('landlord')],
+    getPropertyApplications
   )
-  .patch(
-    [authenticateUserMiddleware, authorizePermissionsMiddleware('employer')],
-    updateApplication
+  .delete(
+    [
+      authenticateUserMiddleware,
+      authorizePermissionsMiddleware('tenant'),
+      cancelApplicationSchema,
+      validateRequest,
+    ],
+    cancelApplication
   );
 
 module.exports = router;
