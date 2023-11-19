@@ -1,5 +1,5 @@
 {
-  "name": "joblink-backend",
+  "name": "propertyloop-backend",
   "version": "1.0.0",
   "description": "A job searching website, where recruiter can post jobs and people can apply for any job.",
   "main": "src/app.js",
