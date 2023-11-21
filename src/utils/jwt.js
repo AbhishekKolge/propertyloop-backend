@@ -20,7 +20,7 @@ const attachCookiesToResponse = ({ res, tokenUser }) => {
     maxAge: process.env.TOKEN_EXPIRATION_TIME,
     secure: true,
     signed: true,
-    sameSite: 'none',
+    sameSite: 'lax',
   });
 };
 

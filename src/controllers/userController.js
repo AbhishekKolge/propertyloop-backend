@@ -113,7 +113,7 @@ const deleteUser = async (req, res) => {
     maxAge: 0,
     secure: true,
     signed: true,
-    sameSite: 'none',
+    sameSite: 'lax',
   });
 
   res.status(StatusCodes.OK).json({
