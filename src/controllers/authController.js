@@ -130,7 +130,7 @@ const logout = async (req, res) => {
     maxAge: 0,
     secure: true,
     signed: true,
-    // sameSite: 'none',
+    sameSite: 'none',
   });
 
   res.status(StatusCodes.OK).json({
