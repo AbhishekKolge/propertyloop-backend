@@ -14,11 +14,11 @@ const register = async (req, res) => {
     verificationCode: customUtils.hashString(verificationCode),
   });
 
-  // await customUtils.sendVerificationEmail({
-  //   name: user.name,
-  //   email: user.email,
-  //   verificationCode,
-  // });
+  await customUtils.sendVerificationEmail({
+    name: user.name,
+    email: user.email,
+    verificationCode,
+  });
 
   res
     .status(StatusCodes.CREATED)
@@ -70,11 +70,11 @@ const forgotPassword = async (req, res) => {
 
   await user.save();
 
-  // await customUtils.sendResetPasswordEmail({
-  //   name: user.name,
-  //   email: user.email,
-  //   passwordCode,
-  // });
+  await customUtils.sendResetPasswordEmail({
+    name: user.name,
+    email: user.email,
+    passwordCode,
+  });
 
   res
     .status(StatusCodes.OK)
