@@ -1,7 +1,7 @@
 {
   "name": "propertyloop-backend",
   "version": "1.0.0",
-  "description": "A job searching website, where recruiter can post jobs and people can apply for any job.",
+  "description": "A property searching website, where landlord can post properties and tenant can apply for any property.",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
