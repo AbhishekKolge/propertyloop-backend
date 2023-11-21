@@ -94,6 +94,10 @@ const getSingleProperty = async (req, res) => {
     );
   }
 
+  const ownProperty = property.landlord._id.equals(req?.user?.userId);
+
+  property.owned = !!ownProperty;
+
   const isApplicationSubmitted = property.applications.find((application) => {
     return application.tenant.equals(req?.user?.userId);
   });

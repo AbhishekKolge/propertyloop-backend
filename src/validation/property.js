@@ -8,6 +8,7 @@ const createPropertySchema = (req, res, next) => {
     furnishStatus: Joi.string().valid('unfurnished', 'furnished').required(),
     carpetArea: Joi.number().optional(),
     price: Joi.number().optional(),
+    status: Joi.string().valid('open', 'closed').optional(),
   });
 
   req.schema = schema;
