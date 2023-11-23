@@ -41,8 +41,8 @@ class QueryBuilder {
     const sortOptions = {
       latest: '-createdAt',
       oldest: 'createdAt',
-      highest: { [this.sortKey]: 1 },
-      lowest: { [this.sortKey]: -1 },
+      highest: { [this.sortKey]: -1 },
+      lowest: { [this.sortKey]: 1 },
     };
 
     this.query.sort = sortOptions[sortOption] || '-createdAt';
