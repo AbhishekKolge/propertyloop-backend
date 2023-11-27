@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const xss = require('xss-clean');
 const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
+const logProLogger = require('@abhishek_kolge/logpro-logger');
 const cloudinary = require('cloudinary').v2;
 
 const whitelist = [process.env.FRONT_END_ORIGIN];
@@ -62,6 +63,12 @@ app.use(
   })
 );
 app.use(morgan('tiny'));
+app.use(
+  logProLogger({
+    key: process.env.LOGPRO_API_KEY,
+    type: 'production',
+  })
+);
 // app.use(
 //   rateLimiter({
 //     windowMs: 15 * 60 * 1000,
