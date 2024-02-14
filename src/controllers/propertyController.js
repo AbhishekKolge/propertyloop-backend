@@ -32,7 +32,7 @@ const createProperty = async (req, res) => {
       propertyImage.tempFilePath,
       {
         use_filename: true,
-        folder: 'propertyloop/property-images',
+        folder: `${process.env.APP_NAME.split(' ').join('-')}/profile-images`,
       }
     );
 
@@ -166,7 +166,7 @@ const updateProperty = async (req, res) => {
         propertyImage.tempFilePath,
         {
           use_filename: true,
-          folder: 'propertyloop/property-images',
+          folder: `${process.env.APP_NAME.split(' ').join('-')}/profile-images`,
         }
       );
 

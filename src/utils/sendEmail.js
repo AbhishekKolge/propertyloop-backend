@@ -7,7 +7,7 @@ const sendResetPasswordEmail = async ({ name, email, passwordCode }) => {
 
   return sendEmail({
     to: email,
-    subject: 'Propertyloop Reset Password Code',
+    subject: `${process.env.APP_NAME.split(' ').join('-')} Reset Password Code`,
     html,
   });
 };
@@ -19,7 +19,9 @@ const sendVerificationEmail = async ({ name, email, verificationCode }) => {
 
   return sendEmail({
     to: email,
-    subject: 'Propertyloop Email Confirmation Code',
+    subject: `${process.env.APP_NAME.split(' ').join(
+      '-'
+    )} Email Confirmation Code`,
     html,
   });
 };
